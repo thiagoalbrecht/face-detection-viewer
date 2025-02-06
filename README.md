@@ -1,50 +1,25 @@
-# React + TypeScript + Vite
+# Face Detection Viewer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is a simple React application that overlays face detection data on a video, which will be used in an upcoming project of mine.
 
-Currently, two official plugins are available:
+## CSV File Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The CSV file should have the following columns (with a header row):
 
-## Expanding the ESLint configuration
+- **frame**: The frame number in the video.
+- **face_id**: A unique identifier for each detected face.
+- **x1, y1, x2, y2**: The coordinates describing the bounding box of the detected face.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Example:
 
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```csv
+frame, face_id, x1,  y1,  x2,  y2 
+1,     0,       100, 50,  150, 100 
+1,     1,       200, 80,  250, 130 
+2,     0,       105, 55,  155, 105 
+...
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Generating Face Detection CSVs
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+A demo Python Jupyter notebook (`face_detect.ipynb`) is provided to help you generate CSV files with face detection data. This notebook uses a wrapper library for the `RetinaFace` model to analyze a video and export face detections as a CSV file. Run the notebook to process your videos and output a CSV file that is compatible with this viewer.
