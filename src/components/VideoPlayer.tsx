@@ -59,7 +59,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     let animationFrameId: number;
     let lastTime = 0;
 
-    const updateFrame = (currentTime: number) => {
+    const updateFrame = () => {
       if (lastTime !== video.currentTime) {
         const currentFrame = Math.floor(video.currentTime * videoState.fps) + 1;
         onFrameUpdate(currentFrame);
@@ -109,6 +109,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             displayHeight={displayDimensions.height}
             currentFrame={videoState.currentFrame}
             maxFaces={videoState.maxFaces}
+            fps={videoState.fps}
           />
         </div>
       )}

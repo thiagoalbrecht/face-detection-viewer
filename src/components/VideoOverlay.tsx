@@ -10,6 +10,7 @@ interface VideoOverlayProps {
   displayHeight: number;
   currentFrame: number;
   maxFaces: number;
+  fps: number;
 }
 
 const VideoOverlay: React.FC<VideoOverlayProps> = ({
@@ -20,6 +21,7 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
   displayHeight,
   currentFrame,
   maxFaces,
+  fps,
 }) => {
   const scaleX = displayWidth / originalWidth;
   const scaleY = displayHeight / originalHeight;
@@ -50,7 +52,8 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
       })}
       
       {/* Overlay information */}
-      <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '5px' }}>
+      <div className='overlay-info'>
+        <div>{fps.toFixed(2)} FPS</div>
         <div>Frame: {currentFrame}</div>
         <div>Faces: {faces.length} / {maxFaces}</div>
       </div>

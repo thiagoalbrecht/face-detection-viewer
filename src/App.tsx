@@ -22,12 +22,12 @@ function App() {
     const mediainfo = await mediaInfoFactory();
 
     try {
-      const readChunk = (size: number, offset: number) => {
-        return new Promise((resolve, reject) => {
+      const readChunk = (size: number, offset: number): Promise<Uint8Array> => {
+        return new Promise<Uint8Array>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
             if (e.target?.result instanceof ArrayBuffer) {
-              resolve(new Uint8Array(e.target.result));
+              resolve(new Uint8Array(e.target.result as ArrayBuffer));
             } else {
               reject(new Error("Failed to read chunk"));
             }
@@ -41,11 +41,12 @@ function App() {
 
       // Parse frame rate from MediaInfo
       const videoTrack = result.media?.track.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (track: any) => track["@type"] === "Video"
       );
-      const fps = videoTrack?.FrameRate ? parseFloat(videoTrack.FrameRate) : 30;
+      const fps = videoTrack && "FrameRate" in videoTrack && videoTrack.FrameRate ? parseFloat(String(videoTrack.FrameRate)) : 0;
 
-      setVideoState((prev) => ({
+      setVideoState((prev: VideoState): VideoState => ({
         ...prev,
         fps,
       }));
@@ -111,7 +112,7 @@ function App() {
     });
 
     setCsvData(parsedData);
-    setVideoState((prev) => ({
+    setVideoState((prev: VideoState): VideoState => ({
       ...prev,
       maxFrame,
       maxFaces: maxFaceId + 1,
@@ -119,7 +120,7 @@ function App() {
   };
 
   const handleFrameUpdate = useCallback((frame: number) => {
-    setVideoState((prev) => ({
+    setVideoState((prev: VideoState): VideoState => ({
       ...prev,
       currentFrame: frame,
     }));
@@ -145,7 +146,6 @@ function App() {
 
         {videoFile && Object.keys(csvData).length > 0 && (
           <div>
-            <div>Video Frame Rate: {videoState.fps.toFixed(2)} FPS</div>
             <VideoPlayer
               videoUrl={videoFile}
               faceData={csvData}

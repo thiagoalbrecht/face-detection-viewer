@@ -9,6 +9,16 @@
   background: #000;
 }
 
+.overlay-info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 10px;
+  text-align: left;
+}
+
 .app {
   text-align: center;
 }
