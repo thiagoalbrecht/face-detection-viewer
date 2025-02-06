@@ -10,127 +10,124 @@ interface VideoPlayerProps {
   onFrameUpdate: (frame: number) => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({
-  videoUrl,
-  faceData,
-  videoState,
-  options,
-  onFrameUpdate,
-}) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [videoDimensions, setVideoDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
-  const [displayDimensions, setDisplayDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
+const VideoPlayer: React.FC<VideoPlayerProps> = React.memo(
+  ({ videoUrl, faceData, videoState, options, onFrameUpdate }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [videoDimensions, setVideoDimensions] = useState({
+      width: 0,
+      height: 0,
+    });
+    const [displayDimensions, setDisplayDimensions] = useState({
+      width: 0,
+      height: 0,
+    });
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
 
-    const handleLoadedMetadata = () => {
-      const { videoWidth, videoHeight } = video;
-      setVideoDimensions({
-        width: videoWidth,
-        height: videoHeight,
-      });
-      updateDisplayDimensions();
-    };
-
-    const updateDisplayDimensions = () => {
-      if (video) {
-        setDisplayDimensions({
-          width: video.offsetWidth,
-          height: video.offsetHeight,
+      const handleLoadedMetadata = () => {
+        const { videoWidth, videoHeight } = video;
+        setVideoDimensions({
+          width: videoWidth,
+          height: videoHeight,
         });
-      }
-    };
+        updateDisplayDimensions();
+      };
 
-    // Handle window resize
-    window.addEventListener("resize", updateDisplayDimensions);
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+      const updateDisplayDimensions = () => {
+        if (video) {
+          setDisplayDimensions({
+            width: video.offsetWidth,
+            height: video.offsetHeight,
+          });
+        }
+      };
 
-    return () => {
-      window.removeEventListener("resize", updateDisplayDimensions);
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-    };
-  }, [videoUrl]);
+      // Handle window resize
+      window.addEventListener("resize", updateDisplayDimensions);
+      video.addEventListener("loadedmetadata", handleLoadedMetadata);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+      return () => {
+        window.removeEventListener("resize", updateDisplayDimensions);
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      };
+    }, [videoUrl]);
 
-    let animationFrameId: number;
-    let lastTime = 0;
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
 
-    const updateFrame = () => {
-      if (lastTime !== video.currentTime) {
-        const currentFrame = Math.floor(video.currentTime * videoState.fps) + 1;
-        onFrameUpdate(currentFrame);
-        lastTime = video.currentTime;
-      }
+      let animationFrameId: number;
+      let lastTime = 0;
+
+      const updateFrame = () => {
+        if (lastTime !== video.currentTime) {
+          const currentFrame =
+            Math.floor(video.currentTime * videoState.fps) + 1;
+          onFrameUpdate(currentFrame);
+          lastTime = video.currentTime;
+        }
+        animationFrameId = requestAnimationFrame(updateFrame);
+      };
+
       animationFrameId = requestAnimationFrame(updateFrame);
-    };
 
-    animationFrameId = requestAnimationFrame(updateFrame);
+      return () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+    }, [onFrameUpdate, videoState.fps]);
 
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, [onFrameUpdate, videoState.fps]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="video-container"
-      style={{ position: "relative" }}
-    >
-      <div className="video-player" style={{ backgroundColor: "black" }}>
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          controls
-          controlsList="nofullscreen"
-          loop
-          playsInline
-          autoPlay
-          style={{
-            display: "block",
-            visibility: options.showVideo ? "visible" : "hidden",
-            width: "100%",
-          }}
-        />
-        {videoDimensions.width > 0 && (
-          <div
+    return (
+      <div
+        ref={containerRef}
+        className="video-container"
+        style={{ position: "relative" }}
+      >
+        <div className="video-player" style={{ backgroundColor: "black" }}>
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            controls
+            controlsList="nofullscreen"
+            loop
+            playsInline
+            autoPlay
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
+              display: "block",
+              visibility: options.showVideo ? "visible" : "hidden",
               width: "100%",
-              height: "100%",
-              pointerEvents: "none",
             }}
-          >
-            <VideoOverlay
-              faces={faceData[videoState.currentFrame] || []}
-              originalWidth={videoDimensions.width}
-              originalHeight={videoDimensions.height}
-              displayWidth={displayDimensions.width}
-              displayHeight={displayDimensions.height}
-              videoState={videoState}
-              options={options}
-            />
-          </div>
-        )}
+          />
+          {videoDimensions.width > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+              }}
+            >
+              <VideoOverlay
+                faces={faceData[videoState.currentFrame] || []}
+                originalWidth={videoDimensions.width}
+                originalHeight={videoDimensions.height}
+                displayWidth={displayDimensions.width}
+                displayHeight={displayDimensions.height}
+                videoState={videoState}
+                options={options}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
 
 export default VideoPlayer;

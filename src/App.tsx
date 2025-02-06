@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import mediaInfoFactory from "mediainfo.js";
 import { ParsedFaceData, FaceData, VideoState, PlayerOptions } from "./types";
 import VideoPlayer from "./components/VideoPlayer";
@@ -20,10 +20,12 @@ function App() {
     colorCodedBoxes: true,
   });
 
-  const parseCsvLine = (
-    line: string,
-    headers: string[]
-  ): FaceData | null => {
+  const memoizedVideoOptions = useMemo(
+    () => videoOptions,
+    [videoOptions]
+  );
+
+  const parseCsvLine = (line: string, headers: string[]): FaceData | null => {
     const values = line.split(",").map((v) => v.trim());
     const frame = parseInt(values[headers.indexOf("frame")]);
     const face_id = parseInt(values[headers.indexOf("face_id")]);
@@ -203,7 +205,7 @@ function App() {
       <div>
         <h1>Face Detection Viewer</h1>
         <div>
-        <span>Load demos: </span>
+          <span>Load demos: </span>
           <button
             onClick={() =>
               loadDemo("/demos/boy.mp4", "/demos/face_boy_single.csv")
@@ -286,7 +288,7 @@ function App() {
             videoUrl={videoFile}
             faceData={csvData}
             videoState={videoState}
-            options={videoOptions}
+            options={memoizedVideoOptions}
             onFrameUpdate={handleFrameUpdate}
           />
         </div>
