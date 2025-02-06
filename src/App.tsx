@@ -6,6 +6,7 @@ import VideoPlayer from "./components/VideoPlayer";
 function App() {
   const [videoFile, setVideoFile] = useState<string | null>(null);
   const [csvData, setCsvData] = useState<ParsedFaceData>({});
+  const [csvDataErrors, setCsvDataErrors] = useState<string[]>([]);
   const [videoState, setVideoState] = useState<VideoState>({
     currentFrame: 1,
     maxFrame: 0,
@@ -56,10 +57,12 @@ function App() {
           ? parseFloat(String(videoTrack.FrameRate))
           : 0;
 
-      setVideoState((prev: VideoState): VideoState => ({
-        ...prev,
-        fps,
-      }));
+      setVideoState(
+        (prev: VideoState): VideoState => ({
+          ...prev,
+          fps,
+        })
+      );
 
       const url = URL.createObjectURL(file);
       setVideoFile(url);
@@ -71,6 +74,7 @@ function App() {
   const handleCsvUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
+    setCsvDataErrors([]);
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -82,7 +86,7 @@ function App() {
     let maxFrame = 0;
     let maxFaceId = -1;
 
-    lines.slice(1).forEach((line) => {
+    lines.slice(1).forEach((line, index) => {
       if (!line.trim()) return;
 
       const values = line.split(",").map((v) => v.trim());
@@ -100,13 +104,12 @@ function App() {
         isNaN(x1) ||
         isNaN(y1) ||
         isNaN(x2) ||
-        isNaN(y2) ||
-        x1 < 0 ||
-        y1 < 0 ||
-        x2 <= x1 ||
-        y2 <= y1
+        isNaN(y2)
       ) {
-        console.warn("Skipping invalid data row:", line);
+        setCsvDataErrors((prev) => [
+          ...prev,
+          `Invalid face data on line ${index + 2}: ${line}`,
+        ]);
         return;
       }
 
@@ -122,18 +125,22 @@ function App() {
     });
 
     setCsvData(parsedData);
-    setVideoState((prev: VideoState): VideoState => ({
-      ...prev,
-      maxFrame,
-      maxFaces: maxFaceId + 1,
-    }));
+    setVideoState(
+      (prev: VideoState): VideoState => ({
+        ...prev,
+        maxFrame,
+        maxFaces: maxFaceId + 1,
+      })
+    );
   };
 
   const handleFrameUpdate = useCallback((frame: number) => {
-    setVideoState((prev: VideoState): VideoState => ({
-      ...prev,
-      currentFrame: frame,
-    }));
+    setVideoState(
+      (prev: VideoState): VideoState => ({
+        ...prev,
+        currentFrame: frame,
+      })
+    );
   }, []);
 
   return (
@@ -210,6 +217,17 @@ function App() {
             options={videoOptions}
             onFrameUpdate={handleFrameUpdate}
           />
+        </div>
+      )}
+      {csvDataErrors.length > 0 && (
+        <div className="error-box">
+          Your CSV file is (partially) invalid.
+          <br /> <br />
+          {csvDataErrors.map((error, index) => (
+            <div style={{ fontWeight: "normal" }} key={index}>
+              {error}
+            </div>
+          ))}
         </div>
       )}
     </div>

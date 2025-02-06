@@ -25,6 +25,17 @@
   font-weight: bold;
 }
 
+.error-box {
+  display: inline-block;
+  text-align: left;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: beige;
+  color: red;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+}
+
 .form-controls {
   display: flex;
   justify-content: center;
