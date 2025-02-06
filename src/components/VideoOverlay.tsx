@@ -1,5 +1,5 @@
 import React from "react";
-import { FaceData, VideoState } from "../types";
+import { FaceData, PlayerOptions, VideoState } from "../types";
 import { generateColorFromId } from "../utils/colors";
 
 interface VideoOverlayProps {
@@ -9,6 +9,7 @@ interface VideoOverlayProps {
   displayWidth: number;
   displayHeight: number;
   videoState: VideoState;
+  options: PlayerOptions;
 }
 
 const VideoOverlay: React.FC<VideoOverlayProps> = ({
@@ -18,6 +19,7 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
   displayWidth,
   displayHeight,
   videoState,
+  options,
 }) => {
   const scaleX = displayWidth / originalWidth;
   const scaleY = displayHeight / originalHeight;
@@ -40,14 +42,14 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
               top: `${scaledY1}px`,
               width: `${scaledWidth}px`,
               height: `${scaledHeight}px`,
-              border: `2px solid ${generateColorFromId(face.face_id)}`,
+              border: `2px solid ${options.colorCodedBoxes ? generateColorFromId(face.face_id) : 'red'}`,
               pointerEvents: "none",
             }}
           />
         );
       })}
 
-      {/* Overlay information */}
+      {options.showInfoOverlay && (
       <div className="overlay-info">
         <div>{videoState.fps.toFixed(2)} FPS</div>
         <div>
@@ -66,6 +68,7 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

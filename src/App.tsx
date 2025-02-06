@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import mediaInfoFactory from "mediainfo.js";
-import { ParsedFaceData, FaceData, VideoState } from "./types";
+import { ParsedFaceData, FaceData, VideoState, PlayerOptions } from "./types";
 import VideoPlayer from "./components/VideoPlayer";
 
 function App() {
@@ -11,6 +11,13 @@ function App() {
     maxFrame: 0,
     maxFaces: 0,
     fps: 0,
+  });
+
+  // New state for VideoPlayer options
+  const [videoOptions, setVideoOptions] = useState<PlayerOptions>({
+    showInfoOverlay: true,
+    showVideo: true,
+    colorCodedBoxes: true,
   });
 
   const handleVideoUpload = async (
@@ -44,7 +51,10 @@ function App() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (track: any) => track["@type"] === "Video"
       );
-      const fps = videoTrack && "FrameRate" in videoTrack && videoTrack.FrameRate ? parseFloat(String(videoTrack.FrameRate)) : 0;
+      const fps =
+        videoTrack && "FrameRate" in videoTrack && videoTrack.FrameRate
+          ? parseFloat(String(videoTrack.FrameRate))
+          : 0;
 
       setVideoState((prev: VideoState): VideoState => ({
         ...prev,
@@ -128,32 +138,80 @@ function App() {
 
   return (
     <div className="app">
+      <div>
+        <h1>Face Detection Viewer</h1>
+      </div>
+
+      <div className="form-controls">
         <div>
-          <h1>Face Detection Viewer</h1>
+          <label>Video File: </label>
+          <input type="file" accept="video/*" onChange={handleVideoUpload} />
         </div>
 
         <div>
-          <div>
-            <label>Upload Video File: </label>
-            <input type="file" accept="video/*" onChange={handleVideoUpload} />
-          </div>
-
-          <div>
-            <label>Upload Face Detection CSV: </label>
-            <input type="file" accept=".csv" onChange={handleCsvUpload} />
-          </div>
+          <label>Face Detection CSV: </label>
+          <input type="file" accept=".csv" onChange={handleCsvUpload} />
         </div>
 
-        {videoFile && Object.keys(csvData).length > 0 && (
-          <div>
-            <VideoPlayer
-              videoUrl={videoFile}
-              faceData={csvData}
-              videoState={videoState}
-              onFrameUpdate={handleFrameUpdate}
+        {/* option checkboxes */}
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={videoOptions.showInfoOverlay}
+              onChange={(e) =>
+                setVideoOptions((prev) => ({
+                  ...prev,
+                  showInfoOverlay: e.target.checked,
+                }))
+              }
             />
-          </div>
-        )}
+            Show Info
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={videoOptions.showVideo}
+              onChange={(e) =>
+                setVideoOptions((prev) => ({
+                  ...prev,
+                  showVideo: e.target.checked,
+                }))
+              }
+            />
+            Show Video
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={videoOptions.colorCodedBoxes}
+              onChange={(e) =>
+                setVideoOptions((prev) => ({
+                  ...prev,
+                  colorCodedBoxes: e.target.checked,
+                }))
+              }
+            />
+            Color Coded Boxes
+          </label>
+        </div>
+      </div>
+
+      {videoFile && Object.keys(csvData).length > 0 && (
+        <div>
+          <VideoPlayer
+            videoUrl={videoFile}
+            faceData={csvData}
+            videoState={videoState}
+            options={videoOptions}
+            onFrameUpdate={handleFrameUpdate}
+          />
+        </div>
+      )}
     </div>
   );
 }

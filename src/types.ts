@@ -17,3 +17,9 @@ export interface VideoState {
   maxFaces: number;
   fps: number;
 }
+
+export interface PlayerOptions {
+  showInfoOverlay?: boolean;
+  showVideo?: boolean;
+  colorCodedBoxes?: boolean;
+}
