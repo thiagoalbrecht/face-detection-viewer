@@ -99,6 +99,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           controlsList="nofullscreen"
           loop
           playsInline
+          autoPlay
           style={{
             display: "block",
             visibility: options.showVideo ? "visible" : "hidden",

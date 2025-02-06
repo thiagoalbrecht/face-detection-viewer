@@ -14,24 +14,41 @@ function App() {
     fps: 0,
   });
 
-  // New state for VideoPlayer options
   const [videoOptions, setVideoOptions] = useState<PlayerOptions>({
     showInfoOverlay: true,
     showVideo: true,
     colorCodedBoxes: true,
   });
 
-  const handleVideoUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const parseCsvLine = (
+    line: string,
+    headers: string[]
+  ): FaceData | null => {
+    const values = line.split(",").map((v) => v.trim());
+    const frame = parseInt(values[headers.indexOf("frame")]);
+    const face_id = parseInt(values[headers.indexOf("face_id")]);
+    const x1 = parseInt(values[headers.indexOf("x1")]);
+    const y1 = parseInt(values[headers.indexOf("y1")]);
+    const x2 = parseInt(values[headers.indexOf("x2")]);
+    const y2 = parseInt(values[headers.indexOf("y2")]);
+    if (
+      isNaN(frame) ||
+      isNaN(face_id) ||
+      isNaN(x1) ||
+      isNaN(y1) ||
+      isNaN(x2) ||
+      isNaN(y2)
+    ) {
+      return null;
+    }
+    return { frame, face_id, x1, y1, x2, y2 };
+  };
 
+  const analyzeVideoFps = async (blob: Blob): Promise<number> => {
     const mediainfo = await mediaInfoFactory();
-
     try {
-      const readChunk = (size: number, offset: number): Promise<Uint8Array> => {
-        return new Promise<Uint8Array>((resolve, reject) => {
+      const readChunk = (size: number, offset: number): Promise<Uint8Array> =>
+        new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
             if (e.target?.result instanceof ArrayBuffer) {
@@ -41,13 +58,14 @@ function App() {
             }
           };
           reader.onerror = reject;
-          reader.readAsArrayBuffer(file.slice(offset, offset + size));
+          reader.readAsArrayBuffer(blob.slice(offset, offset + size));
         });
-      };
 
-      const result = await mediainfo.analyzeData(() => file.size, readChunk);
+      const result = await mediainfo.analyzeData(
+        () => blob.size,
+        readChunk
+      );
 
-      // Parse frame rate from MediaInfo
       const videoTrack = result.media?.track.find(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (track: any) => track["@type"] === "Video"
@@ -56,19 +74,26 @@ function App() {
         videoTrack && "FrameRate" in videoTrack && videoTrack.FrameRate
           ? parseFloat(String(videoTrack.FrameRate))
           : 0;
-
-      setVideoState(
-        (prev: VideoState): VideoState => ({
-          ...prev,
-          fps,
-        })
-      );
-
-      const url = URL.createObjectURL(file);
-      setVideoFile(url);
+      return fps;
     } finally {
       mediainfo.close();
     }
+  };
+
+  const handleVideoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fps = await analyzeVideoFps(file);
+    setVideoState((prev: VideoState): VideoState => ({
+      ...prev,
+      fps,
+    }));
+
+    const url = URL.createObjectURL(file);
+    setVideoFile(url);
   };
 
   const handleCsvUpload = async (
@@ -88,65 +113,113 @@ function App() {
 
     lines.slice(1).forEach((line, index) => {
       if (!line.trim()) return;
-
-      const values = line.split(",").map((v) => v.trim());
-      const frame = parseInt(values[headers.indexOf("frame")]);
-      const face_id = parseInt(values[headers.indexOf("face_id")]);
-      const x1 = parseInt(values[headers.indexOf("x1")]);
-      const y1 = parseInt(values[headers.indexOf("y1")]);
-      const x2 = parseInt(values[headers.indexOf("x2")]);
-      const y2 = parseInt(values[headers.indexOf("y2")]);
-
-      // Skip if any of the required values are NaN or invalid
-      if (
-        isNaN(frame) ||
-        isNaN(face_id) ||
-        isNaN(x1) ||
-        isNaN(y1) ||
-        isNaN(x2) ||
-        isNaN(y2)
-      ) {
+      const data = parseCsvLine(line, headers);
+      if (!data) {
         setCsvDataErrors((prev) => [
           ...prev,
           `Invalid face data on line ${index + 2}: ${line}`,
         ]);
         return;
       }
-
-      const data: FaceData = { frame, face_id, x1, y1, x2, y2 };
-
-      maxFrame = Math.max(maxFrame, frame);
-      maxFaceId = Math.max(maxFaceId, face_id);
-
-      if (!parsedData[frame]) {
-        parsedData[frame] = [];
+      maxFrame = Math.max(maxFrame, data.frame);
+      maxFaceId = Math.max(maxFaceId, data.face_id);
+      if (!parsedData[data.frame]) {
+        parsedData[data.frame] = [];
       }
-      parsedData[frame].push(data);
+      parsedData[data.frame].push(data);
     });
 
     setCsvData(parsedData);
-    setVideoState(
-      (prev: VideoState): VideoState => ({
-        ...prev,
-        maxFrame,
-        maxFaces: maxFaceId + 1,
-      })
-    );
+    setVideoState((prev: VideoState): VideoState => ({
+      ...prev,
+      maxFrame,
+      maxFaces: maxFaceId + 1,
+    }));
   };
 
   const handleFrameUpdate = useCallback((frame: number) => {
-    setVideoState(
-      (prev: VideoState): VideoState => ({
-        ...prev,
-        currentFrame: frame,
-      })
-    );
+    setVideoState((prev: VideoState): VideoState => ({
+      ...prev,
+      currentFrame: frame,
+    }));
   }, []);
+
+  const loadDemo = async (videoUrl: string, csvUrl: string) => {
+    setCsvDataErrors([]);
+    try {
+      // Process CSV file
+      const csvResponse = await fetch(csvUrl);
+      const csvText = await csvResponse.text();
+      const lines = csvText.split("\n");
+      const headers = lines[0].split(",").map((h) => h.trim());
+
+      const parsedData: ParsedFaceData = {};
+      let maxFrame = 0;
+      let maxFaceId = -1;
+
+      lines.slice(1).forEach((line, index) => {
+        if (!line.trim()) return;
+        const data = parseCsvLine(line, headers);
+        if (!data) {
+          setCsvDataErrors((prev) => [
+            ...prev,
+            `Invalid face data on line ${index + 2}: ${line}`,
+          ]);
+          return;
+        }
+        maxFrame = Math.max(maxFrame, data.frame);
+        maxFaceId = Math.max(maxFaceId, data.face_id);
+        if (!parsedData[data.frame]) {
+          parsedData[data.frame] = [];
+        }
+        parsedData[data.frame].push(data);
+      });
+
+      setCsvData(parsedData);
+      setVideoState((prev: VideoState): VideoState => ({
+        ...prev,
+        maxFrame,
+        maxFaces: maxFaceId + 1,
+      }));
+
+      const videoResponse = await fetch(videoUrl);
+      const videoBlob = await videoResponse.blob();
+
+      const fps = await analyzeVideoFps(videoBlob);
+      setVideoState((prev: VideoState): VideoState => ({
+        ...prev,
+        fps,
+      }));
+
+      const demoVideoUrl = URL.createObjectURL(videoBlob);
+      setVideoFile(demoVideoUrl);
+    } catch (error) {
+      setCsvDataErrors((prev) => [...prev, String(error)]);
+    }
+  };
 
   return (
     <div className="app">
       <div>
         <h1>Face Detection Viewer</h1>
+        <div>
+        <span>Load demos: </span>
+          <button
+            onClick={() =>
+              loadDemo("/demos/boy.mp4", "/demos/face_boy_single.csv")
+            }
+          >
+            Demo 1: Single Face
+          </button>
+          <button
+            onClick={() =>
+              loadDemo("/demos/group.mp4", "/demos/face_group_multiple.csv")
+            }
+            style={{ marginLeft: "1em" }}
+          >
+            Demo 2: Multiple Faces
+          </button>
+        </div>
       </div>
 
       <div className="form-controls">
@@ -160,7 +233,6 @@ function App() {
           <input type="file" accept=".csv" onChange={handleCsvUpload} />
         </div>
 
-        {/* option checkboxes */}
         <div>
           <label>
             <input
