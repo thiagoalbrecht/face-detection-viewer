@@ -107,9 +107,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             originalHeight={videoDimensions.height}
             displayWidth={displayDimensions.width}
             displayHeight={displayDimensions.height}
-            currentFrame={videoState.currentFrame}
-            maxFaces={videoState.maxFaces}
-            fps={videoState.fps}
+            videoState={videoState}
           />
         </div>
       )}

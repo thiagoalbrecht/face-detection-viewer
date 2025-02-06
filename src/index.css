@@ -19,6 +19,12 @@
   text-align: left;
 }
 
+.error-text {
+  color: red;
+  background-color: #000;
+  font-weight: bold;
+}
+
 .app {
   text-align: center;
 }

@@ -1,6 +1,6 @@
-import React from 'react';
-import { FaceData } from '../types';
-import { generateColorFromId } from '../utils/colors';
+import React from "react";
+import { FaceData, VideoState } from "../types";
+import { generateColorFromId } from "../utils/colors";
 
 interface VideoOverlayProps {
   faces: FaceData[];
@@ -8,9 +8,7 @@ interface VideoOverlayProps {
   originalHeight: number;
   displayWidth: number;
   displayHeight: number;
-  currentFrame: number;
-  maxFaces: number;
-  fps: number;
+  videoState: VideoState;
 }
 
 const VideoOverlay: React.FC<VideoOverlayProps> = ({
@@ -19,15 +17,13 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
   originalHeight,
   displayWidth,
   displayHeight,
-  currentFrame,
-  maxFaces,
-  fps,
+  videoState,
 }) => {
   const scaleX = displayWidth / originalWidth;
   const scaleY = displayHeight / originalHeight;
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {faces.map((face, index) => {
         // Scale the coordinates
         const scaledX1 = face.x1 * scaleX;
@@ -39,23 +35,36 @@ const VideoOverlay: React.FC<VideoOverlayProps> = ({
           <div
             key={`${face.face_id}-${index}`}
             style={{
-              position: 'absolute',
+              position: "absolute",
               left: `${scaledX1}px`,
               top: `${scaledY1}px`,
               width: `${scaledWidth}px`,
               height: `${scaledHeight}px`,
               border: `2px solid ${generateColorFromId(face.face_id)}`,
-              pointerEvents: 'none',
+              pointerEvents: "none",
             }}
           />
         );
       })}
-      
+
       {/* Overlay information */}
-      <div className='overlay-info'>
-        <div>{fps.toFixed(2)} FPS</div>
-        <div>Frame: {currentFrame}</div>
-        <div>Faces: {faces.length} / {maxFaces}</div>
+      <div className="overlay-info">
+        <div>{videoState.fps.toFixed(2)} FPS</div>
+        <div>
+          Frame: {videoState.currentFrame}{" "}
+          {videoState.currentFrame > videoState.maxFrame ? (
+            <span> &gt; {videoState.maxFrame}</span>
+          ) : (
+            ""
+          )}
+        </div>
+        {videoState.currentFrame > videoState.maxFrame ? (
+          <div className="error-text">Face data is out of bounds</div>
+        ) : (
+          <div>
+            Faces: {faces.length} / {videoState.maxFaces}
+          </div>
+        )}
       </div>
     </div>
   );
