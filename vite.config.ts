@@ -9,7 +9,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: normalizePath(path.resolve(__dirname, './node_modules/mediainfo.js/dist/MediaInfoModule.wasm')),
+          src: normalizePath(path.join(__dirname, 'node_modules', 'mediainfo.js', 'dist', 'MediaInfoModule.wasm')),
           dest: '',
         },
       ],
